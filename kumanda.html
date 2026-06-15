@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Kumanda 🎮</title>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&display=swap');
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{width:100%;height:100%;overflow:hidden;background:#0f0520;font-family:'Fredoka',sans-serif;color:#fff;user-select:none;}
+
+#screen{
+  width:100%;height:100%;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:24px;text-align:center;
+  background:radial-gradient(ellipse at 50% 0%,rgba(120,40,200,.35) 0%,transparent 65%),
+             linear-gradient(160deg,#0f0520 0%,#1a0840 50%,#0a1535 100%);
+}
+
+h1{font-size:2.2rem;font-weight:700;
+  background:linear-gradient(90deg,#ffe066,#ff6eb4,#7efff5);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  margin-bottom:4px;}
+.sub{font-size:.85rem;color:rgba(255,255,255,.5);margin-bottom:18px;}
+
+/* Status */
+#status{
+  font-size:.95rem;padding:10px 22px;
+  background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);
+  border-radius:24px;margin-bottom:18px;transition:all .3s;
+}
+#status.connected{background:rgba(0,200,100,.15);border-color:rgba(126,255,245,.4);color:#7efff5;}
+#status.error{background:rgba(255,0,0,.15);border-color:rgba(255,100,100,.4);color:#ff6eb4;}
+
+/* Tilt visualizer */
+#tilt-area{
+  width:220px;height:220px;border-radius:50%;
+  border:2px solid rgba(255,255,255,.18);
+  background:rgba(255,255,255,.05);
+  position:relative;margin:0 auto 16px;
+  display:none;
+}
+#tilt-dot{
+  width:44px;height:44px;border-radius:50%;
+  background:radial-gradient(circle,#fff 0%,rgba(126,255,245,.9) 55%,transparent 100%);
+  box-shadow:0 0 24px rgba(126,255,245,.9),0 0 48px rgba(126,255,245,.4);
+  position:absolute;transform:translate(-50%,-50%);
+  left:50%;top:50%;
+  transition:left .08s ease,top .08s ease;
+}
+/* Cross lines */
+#tilt-area::before,#tilt-area::after{
+  content:'';position:absolute;background:rgba(255,255,255,.1);
+}
+#tilt-area::before{width:1px;height:100%;left:50%;top:0;}
+#tilt-area::after{width:100%;height:1px;top:50%;left:0;}
+
+/* Score */
+#score-display{
+  font-size:3.5rem;font-weight:700;color:#ffe066;
+  text-shadow:0 0 20px rgba(255,224,102,.5);
+  display:none;margin-bottom:8px;line-height:1;
+}
+#score-label{font-size:.8rem;color:rgba(255,255,255,.4);display:none;margin-bottom:12px;}
+
+/* Pop feedback */
+#pop-feedback{
+  font-size:1.8rem;font-weight:700;
+  height:44px;display:flex;align-items:center;justify-content:center;
+  opacity:0;transform:translateY(0);
+  transition:opacity .15s,transform .15s;
+}
+
+/* Buttons */
+.action-btn{
+  font-family:'Fredoka',sans-serif;font-weight:700;
+  padding:11px 28px;font-size:1rem;
+  border-radius:28px;border:none;cursor:pointer;
+  margin:6px;display:none;
+}
+#ios-btn{background:linear-gradient(135deg,#ff6eb4,#ff3d9a);color:#fff;}
+#calib-btn{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.25);color:#fff;}
+#calib-btn:active{background:rgba(255,255,255,.2);}
+
+/* Tips */
+#tips{
+  font-size:.78rem;color:rgba(255,255,255,.38);
+  margin-top:14px;line-height:2;display:none;
+}
+
+/* Game end overlay */
+#end-overlay{
+  position:fixed;inset:0;z-index:50;
+  display:none;flex-direction:column;align-items:center;justify-content:center;
+  background:rgba(0,0,0,.85);text-align:center;padding:20px;
+}
+#end-overlay h2{font-size:2.5rem;margin-bottom:10px;}
+#end-score{font-size:5rem;font-weight:700;color:#ffe066;line-height:1;margin-bottom:8px;}
+#end-msg{font-size:1.1rem;color:rgba(255,255,255,.7);margin-bottom:24px;}
+#end-overlay .action-btn{display:inline-block;background:linear-gradient(135deg,#7efff5,#00bcd4);color:#0f0520;font-size:1.2rem;padding:13px 36px;}
+
+/* Stars */
+#stars{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;}
+.star{position:absolute;border-radius:50%;background:#fff;}
+</style>
+</head>
+<body>
+
+<div id="stars"></div>
+
+<div id="screen">
+  <h1>🎮 Kumanda</h1>
+  <p class="sub">Baloncuk Patlatma</p>
+
+  <div id="status">🔄 Bağlanıyor...</div>
+
+  <div id="tilt-area">
+    <div id="tilt-dot"></div>
+  </div>
+
+  <div id="score-display">0</div>
+  <div id="score-label">📊 Puan</div>
+  <div id="pop-feedback"></div>
+
+  <button class="action-btn" id="ios-btn" onclick="requestIOSPerm()">📱 Hareket İzni Ver</button>
+  <button class="action-btn" id="calib-btn" onclick="calibrate()">🎯 Merkeze Al</button>
+
+  <div id="tips">
+    📱 Telefonu eğ → imleç hareket eder<br>
+    🎈 İmleci balona götür → patlar!<br>
+    💣 Bombadan uzak dur!<br>
+    🎯 Merkeze Al → elini düz tut, bas
+  </div>
+</div>
+
+<!-- Game End Overlay -->
+<div id="end-overlay">
+  <h2 id="end-title">⏰ Süre Doldu!</h2>
+  <div id="end-score">0</div>
+  <div id="end-msg"></div>
+  <button class="action-btn" onclick="closeEnd()">🔄 Tekrar</button>
+</div>
+
+<script>
+// Stars
+(()=>{
+  const c=document.getElementById('stars');
+  for(let i=0;i<50;i++){
+    const s=document.createElement('div');s.className='star';
+    const sz=.5+Math.random()*2;
+    s.style.cssText=`width:${sz}px;height:${sz}px;left:${Math.random()*100}%;top:${Math.random()*100}%;opacity:${.1+Math.random()*.6};`;
+    c.appendChild(s);
+  }
+})();
+
+// ── URL PARAM ──────────────────────────────────────────
+const roomId=new URLSearchParams(window.location.search).get('room');
+if(!roomId){
+  document.getElementById('status').textContent='❌ Oda kodu yok! QR kodu tekrar tara.';
+  document.getElementById('status').className='error';
+}
+
+// ── STATE ──────────────────────────────────────────────
+let conn=null,myScore=0;
+let calibGamma=0,calibBeta=20; // calibration offsets
+let lastGamma=0,lastBeta=0;
+let sendInterval=null;
+
+// ── PEERJS ─────────────────────────────────────────────
+const peer=new Peer();
+
+peer.on('open',()=>{
+  if(!roomId)return;
+  document.getElementById('status').textContent='🔄 Oyuna bağlanıyor...';
+  conn=peer.connect(roomId,{reliable:false,serialization:'json'});
+
+  conn.on('open',()=>{
+    document.getElementById('status').textContent='✅ Bağlandı! Hazır.';
+    document.getElementById('status').className='connected';
+    document.getElementById('tilt-area').style.display='block';
+    document.getElementById('score-display').style.display='block';
+    document.getElementById('score-label').style.display='block';
+    document.getElementById('calib-btn').style.display='inline-block';
+    document.getElementById('tips').style.display='block';
+    startGyro();
+    keepAwake();
+  });
+
+  conn.on('data',data=>{
+    if(data.type==='pop')handlePop(data);
+    else if(data.type==='gameEnd')handleGameEnd(data);
+    else if(data.type==='gameStart'){myScore=0;document.getElementById('score-display').textContent='0';}
+  });
+
+  conn.on('close',()=>{
+    document.getElementById('status').textContent='❌ Bağlantı kesildi.';
+    document.getElementById('status').className='error';
+    if(sendInterval){clearInterval(sendInterval);sendInterval=null;}
+  });
+
+  conn.on('error',err=>{
+    document.getElementById('status').textContent='❌ Hata. Sayfayı yenile.';
+    document.getElementById('status').className='error';
+  });
+});
+
+peer.on('error',()=>{
+  document.getElementById('status').textContent='❌ Sunucuya ulaşılamıyor. Yenile.';
+  document.getElementById('status').className='error';
+});
+
+// ── GYROSCOPE ──────────────────────────────────────────
+function startGyro(){
+  if(typeof DeviceOrientationEvent!=='undefined'&&
+     typeof DeviceOrientationEvent.requestPermission==='function'){
+    // iOS 13+
+    document.getElementById('ios-btn').style.display='inline-block';
+  } else {
+    setupOrientation();
+  }
+}
+
+function requestIOSPerm(){
+  DeviceOrientationEvent.requestPermission()
+    .then(state=>{
+      if(state==='granted'){
+        document.getElementById('ios-btn').style.display='none';
+        setupOrientation();
+      } else {
+        alert('Hareket izni reddedildi. Ayarlar > Safari > Hareket bölümünden izin ver.');
+      }
+    })
+    .catch(()=>{ alert('İzin alınamadı. Sayfayı yenile.'); });
+}
+
+function setupOrientation(){
+  let lastSend=0;
+  window.addEventListener('deviceorientation',e=>{
+    if(e.gamma===null||e.beta===null)return;
+    lastGamma=e.gamma;lastBeta=e.beta;
+    const now=Date.now();
+    if(now-lastSend<40)return; // ~25fps, hafif
+    lastSend=now;
+    const adjGamma=e.gamma-calibGamma;
+    const adjBeta=e.beta-calibBeta;
+    if(conn&&conn.open){
+      try{conn.send({type:'gyro',gamma:adjGamma,beta:adjBeta});}catch(ex){}
+    }
+    updateTiltVisual(adjGamma,adjBeta);
+  });
+}
+
+function updateTiltVisual(gamma,beta){
+  const dot=document.getElementById('tilt-dot');
+  const area=document.getElementById('tilt-area');
+  const sz=area.offsetWidth;
+  const range=45;
+  const x=Math.max(10,Math.min(sz-10,(gamma/range+1)*sz/2));
+  const y=Math.max(10,Math.min(sz-10,(beta/range+1)*sz/2));
+  dot.style.left=x+'px';
+  dot.style.top=y+'px';
+}
+
+function calibrate(){
+  calibGamma=lastGamma;
+  calibBeta=lastBeta;
+  const btn=document.getElementById('calib-btn');
+  btn.textContent='✅ Tamam!';
+  setTimeout(()=>btn.textContent='🎯 Merkeze Al',1500);
+  vibrate(80);
+}
+
+// ── POP FEEDBACK ───────────────────────────────────────
+function handlePop(data){
+  const fb=document.getElementById('pop-feedback');
+  if(data.ptype==='balloon'){
+    myScore+=data.pts;
+    document.getElementById('score-display').textContent=myScore;
+    fb.textContent='+'+data.pts+' 🎈';
+    fb.style.color='#ffe066';
+    vibrate(30);
+    playPopCtrl(data.pts);
+  } else if(data.ptype==='bomb'){
+    myScore=Math.max(0,myScore+data.pts); // pts is negative
+    document.getElementById('score-display').textContent=myScore;
+    fb.textContent='💣 '+data.pts;
+    fb.style.color='#ff4444';
+    vibrate([120,60,120]);
+    playBoomCtrl(false);
+  } else if(data.ptype==='boss'){
+    myScore=Math.max(0,myScore+data.pts);
+    document.getElementById('score-display').textContent=myScore;
+    fb.textContent='👾 '+data.pts;
+    fb.style.color='#ff44ff';
+    vibrate([200,80,200,80,200]);
+    playBoomCtrl(true);
+  }
+  fb.style.opacity='1';fb.style.transform='translateY(-8px)';
+  setTimeout(()=>{fb.style.opacity='0';fb.style.transform='translateY(0)';},900);
+}
+
+function handleGameEnd(data){
+  const ov=document.getElementById('end-overlay');
+  document.getElementById('end-score').textContent=data.score;
+  if(data.won){
+    document.getElementById('end-title').textContent='🍫 TEBRİKLER!';
+    document.getElementById('end-msg').textContent=data.score+' puan! Çikolata kazandın! 🎁';
+    vibrate([200,100,200,100,400]);
+  } else {
+    document.getElementById('end-title').textContent='⏰ Süre Doldu!';
+    document.getElementById('end-msg').textContent=data.score+' puan yaptın!';
+    vibrate([100,50,100]);
+  }
+  ov.style.display='flex';
+}
+
+function closeEnd(){
+  document.getElementById('end-overlay').style.display='none';
+}
+
+// ── VIBRATION ──────────────────────────────────────────
+function vibrate(pattern){
+  try{if('vibrate' in navigator)navigator.vibrate(pattern);}catch(e){}
+}
+
+// ── AUDIO (controller side) ────────────────────────────
+let ctx=null;
+function getCtx(){if(!ctx)ctx=new(window.AudioContext||window.webkitAudioContext)();return ctx;}
+
+function playPopCtrl(pts){
+  try{
+    const a=getCtx(),o=a.createOscillator(),g=a.createGain();
+    o.connect(g);g.connect(a.destination);o.type='sine';
+    const f=pts===5?920:pts===3?720:pts===2?570:430;
+    o.frequency.setValueAtTime(f,a.currentTime);o.frequency.exponentialRampToValueAtTime(140,a.currentTime+.13);
+    g.gain.setValueAtTime(.3,a.currentTime);g.gain.exponentialRampToValueAtTime(.001,a.currentTime+.13);
+    o.start();o.stop(a.currentTime+.13);
+  }catch(e){}
+}
+
+function playBoomCtrl(isBoss){
+  try{
+    const a=getCtx(),dur=isBoss?.5:.3;
+    const buf=a.createBuffer(1,a.sampleRate*dur,a.sampleRate);
+    const d=buf.getChannelData(0);
+    for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/d.length,1.5);
+    const s=a.createBufferSource(),g=a.createGain();
+    s.buffer=buf;s.connect(g);g.connect(a.destination);
+    g.gain.setValueAtTime(.5,a.currentTime);g.gain.exponentialRampToValueAtTime(.001,a.currentTime+dur);
+    s.start();
+  }catch(e){}
+}
+
+// ── WAKE LOCK (ekran kapanmasın) ───────────────────────
+async function keepAwake(){
+  try{if('wakeLock' in navigator)await navigator.wakeLock.request('screen');}catch(e){}
+}
+</script>
+</body>
+</html>
