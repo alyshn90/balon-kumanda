@@ -359,19 +359,24 @@ function gameSketch(p){
   }
   function getMaxBalloons(){return Math.min(12+Math.floor(level*3.5),28);}
 
-  p.preload=()=>{
-    try{bgMusic=p.loadSound('arkaplan_muzik.mp3',()=>{musicLoaded=true;},()=>{musicLoaded=false;});}catch(e){musicLoaded=false;}
-  };
+  // preload YOK — müzik setup'ta yüklenir, p5 hemen başlar
 
   p.setup=()=>{
     const cnv=p.createCanvas(window.innerWidth,window.innerHeight);
     cnv.position(0,0);cnv.style('z-index','5');
     p.textAlign(p.CENTER,p.CENTER);p.colorMode(p.RGB);
-    if(musicLoaded&&bgMusic){
-      amplitude=new p5.Amplitude();fft=new p5.FFT();
-      amplitude.setInput(bgMusic);fft.setInput(bgMusic);
-      p.userStartAudio().then(()=>{bgMusic.loop();bgMusic.setVolume(.45);gameBgMusic=bgMusic;});
-    }
+    // Müziği setup'ta yükle — preload'u bloklamaz
+    try{
+      bgMusic=p.loadSound('arkaplan_muzik.mp3',
+        ()=>{
+          musicLoaded=true;
+          amplitude=new p5.Amplitude();fft=new p5.FFT();
+          amplitude.setInput(bgMusic);fft.setInput(bgMusic);
+          p.userStartAudio().then(()=>{bgMusic.loop();bgMusic.setVolume(.45);gameBgMusic=bgMusic;});
+        },
+        ()=>{musicLoaded=false;}
+      );
+    }catch(e){musicLoaded=false;}
     bombTimerInt=setInterval(()=>{if(gameRunning)bombs.push(new Bomb());},10000);
   };
 
