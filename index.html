@@ -82,6 +82,11 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0f0520;font-family:
 .signature{margin-top:14px;padding-top:10px;border-top:1px solid rgba(255,255,255,.1);}
 .signature span{font-size:.72rem;color:rgba(255,255,255,.3);}
 .signature strong{color:rgba(255,255,255,.48);}
+/* Ana sayfa butonu */
+.home-btn{font-family:'Fredoka',sans-serif;font-weight:700;font-size:clamp(.95rem,3vw,1.2rem);padding:10px 32px;background:rgba(255,255,255,.12);border:2px solid rgba(255,255,255,.3);border-radius:50px;color:#fff;cursor:pointer;margin-top:10px;}
+.home-btn:active{background:rgba(255,255,255,.22);}
+/* HUD ana sayfa butonu */
+#hud-home{width:36px;height:36px;border-radius:50%;border:2px solid rgba(255,255,255,.3);background:rgba(0,0,0,.5);color:#fff;font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;pointer-events:all;}
 </style>
 </head>
 <body>
@@ -117,7 +122,10 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0f0520;font-family:
 <div id="hud">
   <div class="hud-pill" id="h-sc">⭐ <span id="sc">0</span></div>
   <div class="hud-pill" id="h-lv">Lv.<span id="lv">1</span></div>
-  <div class="hud-pill" id="h-tm">⏱<span id="tm">60</span>s</div>
+  <div style="display:flex;align-items:center;gap:8px;pointer-events:all;">
+    <div class="hud-pill" id="h-tm">⏱<span id="tm">60</span>s</div>
+    <button id="hud-home" onclick="goHome()" title="Ana Sayfa">🏠</button>
+  </div>
 </div>
 <div id="h-goal-bar">🎯 Hedefe <span id="goal-left">150</span> puan kaldı → 🍫</div>
 <div id="ctrl-status">📱 Kumanda bağlı · Telefonu eğ → imleç hareket eder</div>
@@ -132,6 +140,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0f0520;font-family:
   <div id="final-rank"></div>
   <div id="final-miss"></div>
   <button class="retry-btn" onclick="retryGame()">🔄 Tekrar Oyna</button>
+  <button class="home-btn" onclick="goHome()">🏠 Ana Sayfaya Dön</button>
   <div class="signature" style="margin-top:20px;"><span>Ali Şahin · <strong>Özel Fatsa Bahçeşehir Koleji</strong></span></div>
 </div>
 
@@ -142,6 +151,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0f0520;font-family:
   <div id="win-msg">150 puanı geçtin!<br>Öğretmeninden çikolatanı al! 🎁</div>
   <div id="win-sub"></div>
   <button class="win-retry-btn" onclick="retryGame()">🔄 Bir Daha Oyna</button>
+  <button class="home-btn" onclick="goHome()">🏠 Ana Sayfaya Dön</button>
   <div class="signature" style="margin-top:20px;"><span>Ali Şahin · <strong>Özel Fatsa Bahçeşehir Koleji</strong></span></div>
 </div>
 
@@ -247,6 +257,24 @@ function startGame(){
     if(timeLeft<=10)document.getElementById('h-tm').classList.add('danger');
     if(timeLeft<=0){clearInterval(timerInterval);endGame();}
   },1000);
+}
+
+function goHome(){
+  ['normal-end','win-end'].forEach(id=>document.getElementById(id).classList.remove('show'));
+  document.querySelectorAll('.konfeti').forEach(k=>k.remove());
+  document.getElementById('boss-alert').style.display='none';
+  if(p5inst){p5inst.remove();p5inst=null;}
+  if(bombTimerInt){clearInterval(bombTimerInt);bombTimerInt=null;}
+  if(timerInterval){clearInterval(timerInterval);timerInterval=null;}
+  if(gameBgMusic){try{gameBgMusic.stop();}catch(e){}gameBgMusic=null;}
+  gameRunning=false;
+  document.getElementById('hud').classList.remove('active');
+  document.getElementById('h-goal-bar').classList.remove('active');
+  document.getElementById('ctrl-status').classList.remove('active');
+  document.getElementById('h-tm').classList.remove('danger');
+  document.getElementById('connect-screen').style.display='flex';
+  document.getElementById('connect-status').textContent='📱 Kumanda bekleniyor...';
+  document.getElementById('connect-status').className='';
 }
 
 function retryGame(){
