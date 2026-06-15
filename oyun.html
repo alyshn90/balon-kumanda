@@ -85,6 +85,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0f0520;font-family:
 </style>
 </head>
 <body>
+<style>#p5_loading,#p5_loading~*{display:none!important;}</style>
 
 <div id="stars"></div>
 
@@ -168,7 +169,14 @@ let controllerConn=null;
 let bombTimerInt=null,gameBgMusic=null;
 
 // ── PEERJS ─────────────────────────────────────────────
-const peer=new Peer();
+const peer=new Peer(undefined,{debug:0});
+
+// p5.js'in "Loading..." yazısını gizle
+document.addEventListener('DOMContentLoaded',()=>{
+  const style=document.createElement('style');
+  style.textContent='canvas ~ * { display:none!important; } #p5_loading{display:none!important;}';
+  document.head.appendChild(style);
+});
 
 peer.on('open',id=>{
   document.getElementById('room-code').textContent=id;
@@ -188,7 +196,7 @@ peer.on('connection',conn=>{
       document.getElementById('connect-screen').style.display='none';
       document.getElementById('ctrl-status').classList.add('active');
       startGame();
-    },800);
+    },3000);
   });
   conn.on('data',data=>{
     if(data.type==='gyro'&&gameRunning){
@@ -229,8 +237,8 @@ function startGame(){
   cursorX=window.innerWidth/2;cursorY=window.innerHeight/2;
   targetX=cursorX;targetY=cursorY;
   if(p5inst)p5inst.remove();
-  p5inst=new p5(gameSketch);
   gameRunning=true;
+  p5inst=new p5(gameSketch);
   notify('gameStart',{goal:GOAL_SCORE,time:GAME_SEC});
   timerInterval=setInterval(()=>{
     if(!gameRunning)return;
