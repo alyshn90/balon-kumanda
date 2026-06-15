@@ -97,23 +97,37 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0f0520;font-family:
 <!-- CONNECTION SCREEN -->
 <div id="connect-screen">
   <h1>🎈 Baloncuk Patlatma</h1>
-  <p style="color:rgba(255,255,255,.55);margin-bottom:14px;">Telefonu kumanda olarak bağla</p>
+  <p style="color:rgba(255,255,255,.55);margin-bottom:20px;">Nasıl oynamak istiyorsun?</p>
 
-  <div id="qr-wrap">
-    <img id="qr-img" src="" alt="QR yükleniyor...">
-  </div>
-  <div id="room-display">Oda: <strong id="room-code">...</strong></div>
-  <div id="connect-status">📱 Kumanda bekleniyor...</div>
-
-  <div class="glass-box" style="text-align:left;font-size:.85rem;color:#d5d0f0;margin-top:14px;">
-    <strong style="color:#ffe066;">📋 Nasıl bağlanılır?</strong><br><br>
-    1️⃣ Telefonla QR kodu tara<br>
-    2️⃣ Kumanda sayfası açılır<br>
-    3️⃣ Telefonu sağa/sola/yukarı/aşağı eğ<br>
-    4️⃣ Balonları patlat! 🎈
+  <!-- KONTROL SEÇİMİ -->
+  <div id="ctrl-select" style="display:flex;flex-direction:column;gap:14px;width:100%;max-width:360px;margin-bottom:20px;">
+    <button onclick="selectFinger()" style="font-family:'Fredoka',sans-serif;font-weight:700;font-size:1.4rem;padding:18px 32px;background:linear-gradient(135deg,#ff6eb4,#ff3d9a);border:none;border-radius:50px;color:#fff;cursor:pointer;box-shadow:0 6px 0 #a8005e;">
+      👆 Parmak ile Oyna
+    </button>
+    <button onclick="selectController()" style="font-family:'Fredoka',sans-serif;font-weight:700;font-size:1.4rem;padding:18px 32px;background:linear-gradient(135deg,#7efff5,#00bcd4);border:none;border-radius:50px;color:#0f0520;cursor:pointer;box-shadow:0 6px 0 #007a8a;">
+      🎮 Kumanda ile Oyna
+    </button>
   </div>
 
-  <div class="signature">
+  <!-- KUMANDA BAĞLANTI (başta gizli) -->
+  <div id="ctrl-connect" style="display:none;width:100%;max-width:420px;text-align:center;">
+    <p style="color:rgba(255,255,255,.55);margin-bottom:14px;">Telefonu kumanda olarak bağla</p>
+    <div id="qr-wrap">
+      <img id="qr-img" src="" alt="QR yükleniyor...">
+    </div>
+    <div id="room-display">Oda: <strong id="room-code">...</strong></div>
+    <div id="connect-status">📱 Kumanda bekleniyor...</div>
+    <div class="glass-box" style="text-align:left;font-size:.85rem;color:#d5d0f0;margin-top:14px;">
+      <strong style="color:#ffe066;">📋 Nasıl bağlanılır?</strong><br><br>
+      1️⃣ Telefonla QR kodu tara<br>
+      2️⃣ Kumanda sayfası açılır<br>
+      3️⃣ Telefonu hareket ettir → imleç oynar<br>
+      4️⃣ Balonları patlat! 🎈
+    </div>
+    <button onclick="backToSelect()" style="font-family:'Fredoka',sans-serif;margin-top:14px;padding:9px 24px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.25);border-radius:20px;color:#fff;cursor:pointer;font-size:.9rem;">← Geri</button>
+  </div>
+
+  <div class="signature" style="margin-top:16px;">
     <span>Yapımcı: <strong>Ali Şahin</strong> · Fen Bilimleri Öğretmeni · Özel Fatsa Bahçeşehir Koleji</span>
   </div>
 </div>
@@ -166,6 +180,22 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0f0520;font-family:
     c.appendChild(s);
   }
 })();
+
+// ── KONTROL SEÇİMİ ─────────────────────────────────────
+function selectFinger(){
+  // Mevcut parmak oyununa yönlendir
+  window.location.href='https://alyshn90.github.io/Balon_Patlatma/';
+}
+
+function selectController(){
+  document.getElementById('ctrl-select').style.display='none';
+  document.getElementById('ctrl-connect').style.display='block';
+}
+
+function backToSelect(){
+  document.getElementById('ctrl-connect').style.display='none';
+  document.getElementById('ctrl-select').style.display='flex';
+}
 
 // ── CONSTANTS ──────────────────────────────────────────
 const GOAL_SCORE=150, GAME_SEC=60, BOMB_PEN=10, BOSS_PEN=30;
@@ -273,6 +303,8 @@ function goHome(){
   document.getElementById('ctrl-status').classList.remove('active');
   document.getElementById('h-tm').classList.remove('danger');
   document.getElementById('connect-screen').style.display='flex';
+  document.getElementById('ctrl-connect').style.display='none';
+  document.getElementById('ctrl-select').style.display='flex';
   document.getElementById('connect-status').textContent='📱 Kumanda bekleniyor...';
   document.getElementById('connect-status').className='';
 }
